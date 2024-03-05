@@ -10,9 +10,8 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
     //TODO: Implement here the TFTP encoder and decoder
     private final Byte ZERO = new Byte("0");
     private List <Byte> bytes = new ArrayList<>();
-    private int opcase = -1;
-    private int packetSize = 0;
-    private boolean wasDeleted;
+    public static int opcase = -1;
+    public static int packetSize = -1;
 
     @Override
     public byte[] decodeNextByte(byte nextByte) {
@@ -21,15 +20,15 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
             bytes.add(nextByte);
             opcase = findCase(0);
         } else {// check if we need to check expected massege length
-            if (opcase == 7 || opcase == 8 || opcase == 1 || opcase == 2) { // case
+            if (opcase == 7 || opcase == 8 || opcase == 1 || opcase == 2) { // LOGRQ || DELRQ || RRQ || WRQ
                 if (nextByte == ZERO) {
                     bytes.add(nextByte);
                     return convertToArrayAndClean();
                 }
                 bytes.add(nextByte);
-            } else if (opcase == 6) {
+            } else if (opcase == 6) { // DIRQ
                 return convertToArrayAndClean();
-            } else if (opcase == 3) {
+            } else if (opcase == 3) { //DATA
                 if (bytes.size() < 4) {
                     bytes.add(nextByte);
                 } else if (bytes.size() == 4) {
@@ -40,20 +39,20 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
                         return convertToArrayAndClean();
                     }
                 }
-            } else if (opcase == 4) {
+            } else if (opcase == 4) {// ACK
                 if (bytes.size() < 4) {
                     bytes.add(nextByte);
                 } else {
                     return convertToArrayAndClean();
                 }
-            } else if (opcase == 9) {
+            } else if (opcase == 9) {// BCAST
                 if (nextByte == ZERO && bytes.size() != 2) {
                     bytes.add(nextByte);
                     return convertToArrayAndClean();
                 } else {
                     bytes.add(nextByte);
                 }
-            } else if (opcase == 5) {
+            } else if (opcase == 5) {// ERROR
                 if (nextByte == ZERO && bytes.size() > 3) {
                     bytes.add(nextByte);
                     return convertToArrayAndClean();
@@ -61,8 +60,10 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
                     bytes.add(nextByte);
                 }
             }
-            else if(opcase == 10) {
+            else if(opcase == 10) {// Disc
                 return convertToArrayAndClean();
+            } else {
+                throw new IllegalArgumentException("opcode not legal"); // for testing
             }
         }
         return null;
@@ -86,8 +87,11 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
         if (bytes.size() < 2 && bytes.get(0) != 0){
             return -1;
         } else {
-            return bytes.get(i).intValue() + bytes.get(i+1).intValue();
+            return twoBytes2Int(bytes.get(i),bytes.get(i+1));
         }
+    }
+    public static int twoBytes2Int (byte byte1,byte byte2) {
+        return ((byte1 & 0xff) << 8) | (byte2 & 0xff);
     }
 
     private byte[] convertToArrayAndClean(){
