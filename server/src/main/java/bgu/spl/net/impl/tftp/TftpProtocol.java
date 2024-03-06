@@ -1,12 +1,9 @@
 package bgu.spl.net.impl.tftp;
 
 import bgu.spl.net.api.BidiMessagingProtocol;
-import bgu.spl.net.srv.Connections;
-import jdk.internal.net.http.common.Pair;
+import bgu.spl.net.srv.*;
 
-import java.io.BufferedOutputStream;
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
@@ -14,15 +11,23 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
 
-    public static BlockingQueue responseQ = new LinkedBlockingQueue();
+    private boolean shouldTeminate;
+    private int connectionId;
+    private Connections<byte[]> connections;
+    public static BlockingQueue responseQ;
     private boolean loggedIn;
-    private byte[] newFile = null;
+    private byte[] newFile;
 
     @Override
     public void start(int connectionId, Connections<byte[]> connections) {
         // TODO implement this
-
-        throw new UnsupportedOperationException("Unimplemented method 'start'");
+        this.shouldTeminate = false;
+        this.connectionId = connectionId;
+        this.connections = connections;
+        this.responseQ  = new LinkedBlockingQueue();
+        this.loggedIn = false;
+        this.newFile = null;
+        //throw new UnsupportedOperationException("Unimplemented method 'start'");
     }
 
     @Override
@@ -30,10 +35,13 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
         // TODO implement this
         if (TftpEncoderDecoder.opcase == 7) { // LOGRQ
             byte[] userName = Arrays.copyOfRange(message, 2, message.length - 1);
-            if (TftpServer.users.contains(userName)) {
+            int userId = System.identityHashCode(userName);
+            if (TftpServer.users.containsKey(userId)) {
                 // TODO: return error message #7
             } else {
-                TftpServer.users.put(userName, userName);
+                TftpServer.users.put(userId, userName);
+                ConnectionHandler ch = new BlockingConnectionHandler(new Socket(),Bidi)
+                connections.connect(userId, );
                 loggedIn = true;
                 // TODO: return ack packet #0 (sucsses)
             }
@@ -105,8 +113,13 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
                 String err = new String(errMsg,StandardCharsets.UTF_8);
                 System.out.println("ERROR" + TftpEncoderDecoder.twoBytes2Int(message[2],message[3]) + err);
             }
-            else if(TftpEncoderDecoder.opcase == 10) {
-                // TODO: terminate session and return ARK #0
+            else if(TftpEncoderDecoder.opcase == 10) { //Disc
+                shouldTeminate = true;
+//                if (shouldTerminate()){
+//                    // TODO: terminate session and return ARK #0
+//                } else {
+//                    // TODO: if needed
+//                }
             }
 
         } else {
@@ -117,7 +130,10 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
     @Override
     public boolean shouldTerminate() {
         // TODO implement this
-        throw new UnsupportedOperationException("Unimplemented method 'shouldTerminate'");
+        this.connections.disconnect(this.connectionId);
+        TftpServer.users.remove(this.connectionId);
+        return shouldTeminate;
+        //throw new UnsupportedOperationException("Unimplemented method 'shouldTerminate'");
     }
 
 
