@@ -46,7 +46,9 @@ public abstract class BaseServer<T> implements Server<T> {
                         clientSock,
                         encdecFactory.get(),
                         protocolFactory.get());
-                handler.getProtocol().start(ids.getAndIncrement(), (Connections<T>) TftpServer.connections);
+                int id = ids.getAndIncrement();
+                handler.getProtocol().start(id, (Connections<T>) TftpServer.connections);
+                TftpServer.connections.connect(id, (ConnectionHandler<Byte>) handler);
                 execute(handler);
             }
         } catch (IOException ex) {

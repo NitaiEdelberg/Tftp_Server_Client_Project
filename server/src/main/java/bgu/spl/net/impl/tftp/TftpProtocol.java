@@ -10,25 +10,22 @@ import java.nio.file.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
 
-    private boolean shouldTeminate;
+    private boolean shouldTerminate;
     private int connectionId;
     private Connections<byte[]> connections;
     private boolean loggedIn;
     private byte[] newFile;
-    private final byte[] ACKsucsses = {0, 4, 0, 0};
-
+    private final byte[] ACKSuccess = {0, 4, 0, 0};
+    private String userName;
 
     @Override
     public void start(int connectionId, Connections<byte[]> connections) {
         // TODO implement this
-        this.shouldTeminate = false;
+        this.shouldTerminate = false;
         this.connectionId = connectionId;
         this.connections = connections;
         this.loggedIn = false;
@@ -63,7 +60,9 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
             } else {
                 // TODO: login and return ack packet #0 (sucsses)
                 TftpServer.onlineUsers.add(userName);
-                connections.send(connectionId, ACKsucsses);
+                connections.send(connectionId, ACKSuccess);
+                loggedIn = true;
+                this.userName = userName;
             }
             return;
         }
@@ -79,7 +78,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
             } else {
                 try {
                     Files.delete(path);
-                    connections.send(connectionId, ACKsucsses);
+                    connections.send(connectionId, ACKSuccess);
                 } catch (IOException e) {
                     // for tests
                     System.out.println("Unable to delete file");
@@ -94,7 +93,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
                 try {
                     byte[] fullFile = Files.readAllBytes(path);
                     byte[] opcode = "03".getBytes(StandardCharsets.UTF_8);
-                    List<byte[]> chunks = splitByteArray(fullFile, 512);
+                    List<byte[]> chunks = splitByteArray(fullFile);
                     short blockCounter = 0;
                     for (byte[] packet : chunks) {
                         blockCounter = (short) (blockCounter + 1);
@@ -116,7 +115,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
         } else if (opcase == 2) {// WRQ
             byte[] fileName = Arrays.copyOfRange(message, 2, message.length - 1);
             if (TftpServer.filesHashMap.containsKey(fileName)) {
-                // TODO: return error message #5
+
             } else {
                 newFile = fileName;
                 byte[] empty = new byte[0];
@@ -125,7 +124,9 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
                 // remember to give an exception to customer FIRST if he  dosn't already has the file!!!!!
             }
         } else if (opcase == 6) { // DIRQ
-            String files = "";
+            StringBuilder files = new StringBuilder();
+            System.out.println("Working Directory = " + System.getProperty("user.dir"));
+
             File directory = new File(TftpServer.directory);
             if (directory.exists() && directory.isDirectory()) {
                 File[] fileList = directory.listFiles();
@@ -133,16 +134,21 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
                     for (File file : fileList) {
                         // Check if the file object is a file (not a directory)
                         if (file.isFile()) {
-                            files += file.getName() + "0";
+                            files.append(file.getName()).append("0");
                         }
                     }
-                    byte[] DIRQBytes = new byte[files.getBytes().length + 1 + 4];
-                    System.arraycopy(ACKsucsses, 0, DIRQBytes, 0, 4);
-                    System.arraycopy(files.getBytes(), 0, DIRQBytes, 4, files.getBytes().length);
-                    connections.send(connectionId, DIRQBytes);
                 } else {
                     System.out.println("The directory is empty.");
                 }
+                byte[] DIRQBytes = new byte[files.toString().getBytes().length + 1 + 6];
+                byte[] data = {0, 3};
+                byte[] block = {0, 1};
+                System.arraycopy(data, 0, DIRQBytes, 0, 2);
+                System.arraycopy(shortToByteArray((short)files.toString().getBytes().length), 0, DIRQBytes, 2, 2);
+                System.arraycopy(block, 0, DIRQBytes, 4, 2);
+                System.arraycopy(files.toString().getBytes(), 0, DIRQBytes, 6, files.toString().getBytes().length);
+                connections.send(connectionId, DIRQBytes);
+                System.out.println("Sending: " + Arrays.toString(DIRQBytes));
             } else {
                 System.out.println("Directory does not exist or is not a directory.");
             }
@@ -165,8 +171,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
             int blockNum = TftpEncoderDecoder.twoBytes2Int(message[2], message[3]);
             System.out.println("ACK " + blockNum);
         } else if (opcase == 9) { //BCAST
-            Byte d = message[2];
-            int action = d.intValue();
+            int action = message[2];
             String ret;
             if (action == 0) {
                 ret = "del";
@@ -181,19 +186,21 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
             String err = new String(errMsg, StandardCharsets.UTF_8);
             System.out.println("ERROR" + TftpEncoderDecoder.twoBytes2Int(message[2], message[3]) + err);
         } else if (opcase == 10) { //Disc
-            shouldTeminate = true;
+            shouldTerminate = true;
             connections.disconnect(connectionId);
+            TftpServer.onlineUsers.remove(userName);
+
         } else {
             System.out.println("Unknown opcode: " + opcase);
         }
     }
 
-    private static List<byte[]> splitByteArray(byte[] input, int paketSize) {
+    private static List<byte[]> splitByteArray(byte[] input) {
         List<byte[]> chunks = new ArrayList<>();
         int offset = 0;
 
         while (offset < input.length) {
-            int length = Math.min(paketSize, input.length - offset);
+            int length = Math.min(512, input.length - offset);
             byte[] chunk = new byte[length];
             System.arraycopy(input, offset, chunk, 0, length);
             chunks.add(chunk);
@@ -212,7 +219,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
     @Override
     public boolean shouldTerminate() {
         // TODO implement this
-        return shouldTeminate;
+        return shouldTerminate;
         //throw new UnsupportedOperationException("Unimplemented method 'shouldTerminate'");
     }
 }

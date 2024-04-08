@@ -14,6 +14,7 @@ public class TftpServer {
     public static LinkedBlockingQueue<String> onlineUsers = new LinkedBlockingQueue<>();
     public static ConcurrentHashMap<byte[], byte[]> filesHashMap = new ConcurrentHashMap<>();
     public static Connections<Byte> connections = new ConnectionsImpl<>();
+    //
     public static String directory = "Files";
     public static void main(String[] args) {
         if(args.length == 1) { //opcode short
