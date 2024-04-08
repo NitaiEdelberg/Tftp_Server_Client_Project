@@ -1,32 +1,33 @@
 package bgu.spl.net.srv;
 
 import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ConnectionsImpl<T> implements Connections<T> {
-    int connectionId;
-    ConnectionHandler<T> handler;
+    ConcurrentHashMap<Integer, ConnectionHandler<T>> connections;
 
     @Override
     public void connect(int connectionId, ConnectionHandler<T> handler) {
-        this.connectionId = connectionId;
-        this.handler = handler;
+        connections.putIfAbsent((Integer)connectionId, handler);
     }
 
     @Override
     public boolean send(int connectionId, T msg) {
-        if (this.connectionId != connectionId) {
-            return false;
-        } else {
-            handler.send(msg);
+        if(connections.containsKey((Integer)connectionId)){
+            connections.get((Integer)connectionId).send(msg);
             return true;
         }
+        return false;
     }
 
     @Override
     public void disconnect(int connectionId) {
         try {
-            handler.close();
-        } catch (IOException ignore) {
+            if(connections.containsKey((Integer)connectionId)) {
+                ConnectionHandler<T> handler = connections.remove((Integer) connectionId);
+                handler.close();
+            }
+        } catch (Exception ignore) {
         }
     }
 }
