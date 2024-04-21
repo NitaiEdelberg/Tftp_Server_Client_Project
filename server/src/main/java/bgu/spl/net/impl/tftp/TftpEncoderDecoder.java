@@ -15,6 +15,8 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
 
     @Override
     public byte[] decodeNextByte(byte nextByte) {
+        System.out.println(nextByte);
+        System.out.println(Arrays.toString(bytes.toArray()));
         // TODO: implement this
         bytes.add(nextByte);
         if (bytes.size() == 2){
@@ -22,7 +24,7 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
         }
         if(opcase != -1){// check if we need to check expected massege length
             if (opcase == 7 || opcase == 8 || opcase == 1 || opcase == 2) { // LOGRQ || DELRQ || RRQ || WRQ
-                if (nextByte == ZERO) {
+                if (nextByte == 0) {
                     return convertToArrayAndClean();
                 }
             } else if (opcase == 6) { // DIRQ
@@ -60,15 +62,17 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
     @Override
     public byte[] encode(byte[] message) {
         //TODO: implement this
-        int opcase1 = twoBytes2Int(message[0], message[1]);
-        if (opcase1 == 3 || opcase1 == 4 || opcase1 == 6 || opcase1 == 10) {
-            return message;
-        } else if (opcase1 != -1){
-            byte[] res = Arrays.copyOf(message, message.length + 1);
-            res[message.length] = ZERO;
-            return res;
-        }
-        return null;
+        System.out.println("Sending: " + Arrays.toString(message));
+        return message;
+//        int opcase1 = twoBytes2Int(message[0], message[1]);
+//        if (opcase1 == 3 || opcase1 == 4 || opcase1 == 6 || opcase1 == 10) {
+//            return message;
+//        } else if (opcase1 != -1){
+//            byte[] res = Arrays.copyOf(message, message.length + 1);
+//            res[message.length] = ZERO;
+//            return res;
+//        }
+//        return null;
     }
 
     private int findCase(int i){
