@@ -41,7 +41,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
     }
 
     void sendError(String error, int errorCode) {
-        byte[] errorBytes = new byte[error.getBytes(StandardCharsets.UTF_8).length + 4];
+        byte[] errorBytes = new byte[error.getBytes(StandardCharsets.UTF_8).length + 5];
         errorBytes[0] = 0;
         errorBytes[1] = 5;
         errorBytes[2] = shortToByteArray((short) errorCode)[0];
@@ -173,13 +173,13 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
                     for (File file : fileList) {
                         // Check if the file object is a file (not a directory)
                         if (file.isFile()) {
-                            files.append(file.getName()).append("0");
+                            files.append(file.getName()).append('\0');
                         }
                     }
                 } else {
                     System.out.println("The directory is empty.");
                 }
-                byte[] DIRQBytes = new byte[files.toString().getBytes().length + 1 + 6];
+                byte[] DIRQBytes = new byte[files.toString().getBytes().length + 1 + 5];
                 byte[] data = {0, 3};
                 byte[] block = {0, 1};
                 System.arraycopy(data, 0, DIRQBytes, 0, 2);
