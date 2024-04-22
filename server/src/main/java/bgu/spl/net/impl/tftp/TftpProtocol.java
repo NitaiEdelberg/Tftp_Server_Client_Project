@@ -18,28 +18,27 @@ import java.util.List;
 
 public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
 
-	private boolean shouldTerminate;
-	private int connectionId;
-	private Connections<byte[]> connections;
-	private boolean loggedIn;
-	private byte[] newFile;
-	private final byte[] ACKSuccess = { 0, 4, 0, 0 };
-	private String userName;
-	private LinkedList<byte[]> packets;
-	private int blockNum = -1;
-	private File currentFile = null;
-
-	@Override
-	public void start(int connectionId, Connections<byte[]> connections) {
-		// TODO implement this
-		this.shouldTerminate = false;
-		this.connectionId = connectionId;
-		this.connections = connections;
-		this.loggedIn = false;
-		this.newFile = null;
-		packets = new LinkedList<>();
-		// throw new UnsupportedOperationException("Unimplemented method 'start'");
-	}
+    private boolean shouldTerminate;
+    private int connectionId;
+    private Connections<byte[]> connections;
+    private boolean loggedIn;
+    private byte[] newFile;
+    private final byte[] ACKSuccess = {0, 4, 0, 0};
+    private String userName;
+    private LinkedList<byte[]> packets;
+    private int blockNum = -1;
+    private File currentFile = null;
+    @Override
+    public void start(int connectionId, Connections<byte[]> connections) {
+        // TODO implement this
+        this.shouldTerminate = false;
+        this.connectionId = connectionId;
+        this.connections = connections;
+        this.loggedIn = false;
+        this.newFile = null;
+        packets = new LinkedList<>();
+        //throw new UnsupportedOperationException("Unimplemented method 'start'");
+    }
 
 	void sendError(String error, int errorCode) {
 		System.out.println("Error: [" + errorCode + "] " + error);
@@ -53,123 +52,122 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
 				error.getBytes(StandardCharsets.UTF_8).length);
 		connections.send(connectionId, errorBytes);
 
-	}
+    }
 
-	@Override
-	public void process(byte[] message) {
-		// TODO implement this
-		int opcase = TftpEncoderDecoder.twoBytes2Int(message[0], message[1]);
-		if (opcase == 7) { // LOGRQ
-			if (loggedIn) {
-				sendError("Already logged in", 7);
-				return;
-			}
-			String userName = new String(message, 2, message.length - 2, StandardCharsets.UTF_8);
-			if (TftpServer.onlineUsers.contains(userName)) {
-				// TODO: return error message #7
-				sendError("Login username already connected", 7);
-			} else {
-				// TODO: login and return ack packet #0 (sucsses)
-				TftpServer.onlineUsers.add(userName);
-				TftpServer.onlineUsersId.put(userName, connectionId);
-				connections.send(connectionId, ACKSuccess);
-				loggedIn = true;
-				this.userName = userName;
-			}
-			return;
-		}
-		if (opcase == 10 && !loggedIn) {
-			sendError("User not logged in", 0);
-			return;
-		}
-		if (!loggedIn) {
-			sendError("User not logged in", 6);
-			return;
-		}
+    @Override
+    public void process(byte[] message) {
+        // TODO implement this
+        int opcase = TftpEncoderDecoder.twoBytes2Int(message[0], message[1]);
+        if (opcase == 7) { // LOGRQ
+            if (loggedIn) {
+                sendError("Already logged in", 7);
+                return;
+            }
+            String userName = new String(message, 2, message.length - 2, StandardCharsets.UTF_8);
+            if (TftpServer.onlineUsers.contains(userName)) {
+                // TODO: return error message #7
+                sendError("Login username already connected", 7);
+            } else {
+                // TODO: login and return ack packet #0 (sucsses)
+                TftpServer.onlineUsers.add(userName);
+                TftpServer.onlineUsersId.put(userName, connectionId);
+                connections.send(connectionId, ACKSuccess);
+                loggedIn = true;
+                this.userName = userName;
+            }
+            return;
+        }
+        if (opcase == 10 && !loggedIn) {
+            sendError("User not logged in", 0);
+            return;
+        }
+        if (!loggedIn) {
+            sendError("User not logged in", 6);
+            return;
+        }
 
-		if (currentFile != null && blockNum != -1 && opcase != 3) {
-			File temp = currentFile;
-			currentFile.renameTo(new File(TftpServer.directory + "\\" + currentFile.getName()));
-			broadcast(currentFile.getName(), false);
-			temp.delete();
-			currentFile = null;
-			blockNum = -1;
-		}
-		if (opcase == 8) {// DELRQ
-			String fileName = new String(message, 2, message.length - 3, StandardCharsets.UTF_8);
-			Path path = Paths.get(TftpServer.directory, fileName);
-			if (!Files.exists(path)) { // TftpServer.filesHashMap.remove(fileName) == null
-				sendError("DELRQ of non-existing file", 1);
-			} else {
-				try {
-					Files.delete(path);
-					broadcast(fileName, true);
-					connections.send(connectionId, ACKSuccess);
-				} catch (IOException e) {
-					// for tests
-					System.out.println("Unable to delete file");
-				}
-			}
-		} else if (opcase == 1) {// RRQ
-			String fileName = new String(message, 2, message.length - 3, StandardCharsets.UTF_8);
-			Path path = Paths.get(TftpServer.directory, fileName);
-			if (Files.exists(path)) { // TftpServer.filesHashMap.remove(fileName) == null
-				// TODO: return DATA packets (of 512 bytes) with file value
-				try {
-					byte[] fullFile = Files.readAllBytes(path);
-					byte[] opcode = { 0, 3 };
-					List<byte[]> chunks = splitByteArray(fullFile);
-					short blockCounter = 1;
-					for (byte[] packet : chunks) {
-						ByteBuffer msg = ByteBuffer.allocate(packet.length + 6);
-						msg.put(opcode);
-						msg.put(shortToByteArray((short) packet.length));
-						msg.put(shortToByteArray(blockCounter));
-						msg.put(packet);
-						packets.addLast(msg.array());
-						blockCounter = (short) (blockCounter + 1);
-					}
-					if (packets.size() != 0) {
-						connections.send(connectionId, packets.removeFirst());
-					} else {
-						ByteBuffer msg = ByteBuffer.allocate(6);
-						msg.put(opcode);
-						msg.put(shortToByteArray((short) 0));
-						msg.put(shortToByteArray((short) 0));
-						connections.send(connectionId, msg.array());
+        if(currentFile != null && blockNum != -1 && opcase != 3){
+            File temp = currentFile;
+            currentFile.renameTo(new File(TftpServer.directory + "\\" + currentFile.getName()));
+            broadcast(currentFile.getName(), false);
+            temp.delete();
+            currentFile = null;
+            blockNum = -1;
+        }
+        if (opcase == 8) {// DELRQ
+            String fileName = new String(message, 2, message.length - 3, StandardCharsets.UTF_8);
+            Path path = Paths.get(TftpServer.directory, fileName);
+            if (!Files.exists(path)) { //TftpServer.filesHashMap.remove(fileName) == null
+                sendError("DELRQ of non-existing file", 1);
+            } else {
+                try {
+                    Files.delete(path);
+                    broadcast(fileName, true);
+                    connections.send(connectionId, ACKSuccess);
+                } catch (IOException e) {
+                    // for tests
+                    System.out.println("Unable to delete file");
+                }
+            }
+        } else if (opcase == 1) {// RRQ
+            String fileName = new String(message, 2, message.length - 3, StandardCharsets.UTF_8);
+            Path path = Paths.get(TftpServer.directory, fileName);
+            if (Files.exists(path)) { //TftpServer.filesHashMap.remove(fileName) == null
+                // TODO: return DATA packets (of 512 bytes) with file value
+                try {
+                    byte[] fullFile = Files.readAllBytes(path);
+                    byte[] opcode = {0, 3};
+                    List<byte[]> chunks = splitByteArray(fullFile);
+                    short blockCounter = 1;
+                    for (byte[] packet : chunks) {
+                        ByteBuffer msg = ByteBuffer.allocate(packet.length + 6);
+                        msg.put(opcode);
+                        msg.put(shortToByteArray((short) packet.length));
+                        msg.put(shortToByteArray(blockCounter));
+                        msg.put(packet);
+                        packets.addLast(msg.array());
+                        blockCounter = (short) (blockCounter + 1);
+                    }
+                    if (packets.size() != 0) {
+                        connections.send(connectionId, packets.removeFirst());
+                    } else {
+                        ByteBuffer msg = ByteBuffer.allocate(6);
+                        msg.put(opcode);
+                        msg.put(shortToByteArray((short) 0));
+                        msg.put(shortToByteArray((short) 0));
+                        connections.send(connectionId, msg.array());
 
-					}
-					blockNum = 1;
-				} catch (IOException e) {
-					sendError("Fail to download", 0);
-				}
-			} else {
-				// TODO: return error message #1
-				sendError("RRQ of non-existing file", 1);
-				// remember to give an exception to customer FIRST if he already has the
-				// file!!!!!
-			}
-		} else if (opcase == 2) {// WRQ
-			String fileName = new String(message, 2, message.length - 3, StandardCharsets.UTF_8);
-			Path path = Paths.get(TftpServer.directory, fileName);
-			if (Files.exists(path)) { // TftpServer.filesHashMap.remove(fileName) == null
-				sendError("File already exists", 5);
-				currentFile = null;
-			} else {
-				Path path1 = Paths.get(TftpServer.temp_directory, fileName);
-				try {
-					currentFile = Files.createFile(path1).toFile();
-					blockNum = 1;
-					connections.send(connectionId, ACKSuccess);
-				} catch (IOException e) {
-					System.out.println("Error: " + e.getMessage());
-					sendError(e.getMessage(), 0);
-					currentFile = null;
-				}
-			}
-		} else if (opcase == 6) { // DIRQ
-			StringBuilder files = new StringBuilder();
-			System.out.println("Working Directory = " + System.getProperty("user.dir"));
+                    }
+                    blockNum = 1;
+                } catch (IOException e) {
+                    sendError("Fail to download", 0);
+                }
+            } else {
+                // TODO: return error message #1
+                sendError("RRQ of non-existing file", 1);
+                // remember to give an exception to customer FIRST if he already has the file!!!!!
+            }
+        } else if (opcase == 2) {// WRQ
+            String fileName = new String(message, 2, message.length - 3, StandardCharsets.UTF_8);
+            Path path = Paths.get(TftpServer.directory, fileName);
+            if (Files.exists(path)) { //TftpServer.filesHashMap.remove(fileName) == null
+                sendError("File already exists", 5);
+                currentFile = null;
+            } else {
+                Path path1 = Paths.get(TftpServer.temp_directory, fileName);
+                try {
+                    currentFile = Files.createFile(path1).toFile();
+                    blockNum = 1;
+                    connections.send(connectionId, ACKSuccess);
+                } catch (IOException e) {
+                    System.out.println("Error: " + e.getMessage());
+                    sendError(e.getMessage(), 0);
+                    currentFile = null;
+                }
+            }
+        } else if (opcase == 6) { // DIRQ
+            StringBuilder files = new StringBuilder();
+            System.out.println("Working Directory = " + System.getProperty("user.dir"));
 
 			File directory = new File(TftpServer.directory);
 			if (directory.exists() && directory.isDirectory()) {
@@ -258,51 +256,47 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
 			TftpServer.onlineUsersId.remove(userName);
 			shouldTerminate = true;
 
-		} else {
-			System.out.println("Unknown opcode: " + opcase);
-		}
-	}
+        } else {
+            System.out.println("Unknown opcode: " + opcase);
+        }
+    }
 
-	private static List<byte[]> splitByteArray(byte[] input) {
-		List<byte[]> chunks = new ArrayList<>();
-		int offset = 0;
+    private static List<byte[]> splitByteArray(byte[] input) {
+        List<byte[]> chunks = new ArrayList<>();
+        int offset = 0;
 
-		while (offset < input.length) {
-			int length = Math.min(512, input.length - offset);
-			byte[] chunk = new byte[length];
-			System.arraycopy(input, offset, chunk, 0, length);
-			chunks.add(chunk);
-			offset += length;
-		}
-		return chunks;
-	}
+        while (offset < input.length) {
+            int length = Math.min(512, input.length - offset);
+            byte[] chunk = new byte[length];
+            System.arraycopy(input, offset, chunk, 0, length);
+            chunks.add(chunk);
+            offset += length;
+        }
+        return chunks;
+    }
 
-	public static byte[] shortToByteArray(short yourShort) {
-		byte[] result = new byte[2];
-		result[0] = (byte) (yourShort >> 8); // Shift right by 8 bits
-		result[1] = (byte) yourShort; // No additional shift needed for the lower 8 bits
-		return result;
-	}
+    public static byte[] shortToByteArray(short yourShort) {
+        byte[] result = new byte[2];
+        result[0] = (byte) (yourShort >> 8); // Shift right by 8 bits
+        result[1] = (byte) yourShort; // No additional shift needed for the lower 8 bits
+        return result;
+    }
 
-	@Override
-	public boolean shouldTerminate() {
-		// TODO implement this
-		return shouldTerminate;
-		// throw new UnsupportedOperationException("Unimplemented method
-		// 'shouldTerminate'");
-	}
-
-	private void broadcast(String filename, boolean isDeleted) {
-		byte[] packet = new byte[filename.getBytes().length + 4];
-		packet[0] = 0;
-		packet[1] = 9;
-		if (isDeleted)
-			packet[2] = 0;
-		else
-			packet[2] = 1;
-		System.arraycopy(filename.getBytes(), 0, packet, 3, filename.getBytes().length);
-		for (String id : TftpServer.onlineUsers) {
-			connections.send(TftpServer.onlineUsersId.get(id), packet);
-		}
-	}
+    @Override
+    public boolean shouldTerminate() {
+        // TODO implement this
+        return shouldTerminate;
+        //throw new UnsupportedOperationException("Unimplemented method 'shouldTerminate'");
+    }
+    private void broadcast(String filename, boolean isDeleted){
+        byte[] packet = new byte[filename.getBytes().length + 4];
+        packet[0] = 0;
+        packet[1] = 9;
+        if(isDeleted) packet[2] = 0;
+        else packet[2] = 1;
+        System.arraycopy(filename.getBytes(), 0, packet, 3, filename.getBytes().length);
+        for(String id: TftpServer.onlineUsers){
+            connections.send(TftpServer.onlineUsersId.get(id), packet);
+        }
+    }
 }
