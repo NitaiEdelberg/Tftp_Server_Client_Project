@@ -10,12 +10,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import static bgu.spl.net.srv.Server.threadPerClient;
 
 public class TftpServer {
-    //TODO: Implement this
-    public static LinkedBlockingQueue<String> onlineUsers = new LinkedBlockingQueue<>();
     public static ConcurrentHashMap<String, Integer> onlineUsersId = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<byte[], byte[]> filesHashMap = new ConcurrentHashMap<>();
     public static Connections<Byte> connections = new ConnectionsImpl<>();
-    //
+
     public static String directory = "Files";
     public static String temp_directory = "temp_files";
     public static void main(String[] args) {

@@ -3,10 +3,14 @@ package bgu.spl.net.srv;
 import bgu.spl.net.api.BidiMessagingProtocol;
 import bgu.spl.net.api.MessageEncoderDecoder;
 import bgu.spl.net.api.MessagingProtocol;
+import bgu.spl.net.impl.tftp.TftpProtocol;
+import bgu.spl.net.impl.tftp.TftpServer;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Arrays;
 
 public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler<T> {
     private final BidiMessagingProtocol<T> protocol;
@@ -38,6 +42,9 @@ public class BlockingConnectionHandler<T> implements Runnable, ConnectionHandler
             }
         } catch (IOException ex) {
             ex.printStackTrace();
+        }
+        finally {
+            TftpServer.onlineUsersId.remove(protocol.getUserName());
         }
 
     }

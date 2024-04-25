@@ -5,10 +5,10 @@ import bgu.spl.net.api.MessageEncoderDecoder;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-import static bgu.spl.net.impl.tftp.TftpProtocol.DATA_HEADER_LENGTH;
-import static bgu.spl.net.impl.tftp.TftpProtocol.OPCODE_LENGTH;
 
 public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
+    public static final int OPCODE_LENGTH = 2;
+    public static final int DATA_HEADER_LENGTH = OPCODE_LENGTH + 2 + 2;
 
     public static short opcode = Opcodes.NO_CASE.value;
     public static short expectedPacketSize = -1;
@@ -59,7 +59,7 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
                 }
                 break;
             case BCAST:
-                if (nextByte == ZERO && bytes.size() != OPCODE_LENGTH) {
+                if (nextByte == ZERO && bytes.size() > OPCODE_LENGTH + 1) {
                     return convertToArrayAndClean();
                 }
                 break;
