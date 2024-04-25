@@ -59,7 +59,7 @@ public class TftpEncoderDecoder implements MessageEncoderDecoder<byte[]> {
                 }
                 break;
             case BCAST:
-                if (nextByte == ZERO && bytes.size() != OPCODE_LENGTH) {
+                if (nextByte == ZERO && bytes.size() > OPCODE_LENGTH + 1) {
                     return convertToArrayAndClean();
                 }
                 break;

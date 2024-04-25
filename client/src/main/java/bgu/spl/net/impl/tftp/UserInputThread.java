@@ -62,9 +62,9 @@ public class UserInputThread implements Runnable {
     }
 
     private byte[] serialize(String request) throws Exception {
-        Serializer.Opcodes opcode;
+        TftpEncoderDecoder.Opcodes opcode;
         String[] tokenized = request.split(" ", 2);
-        opcode = Serializer.Opcodes.valueOf(tokenized[0]);
+        opcode = TftpEncoderDecoder.Opcodes.valueOf(tokenized[0]);
 
         List<byte[]> parts = new ArrayList<>();
         parts.add(encode(opcode));
@@ -93,7 +93,7 @@ public class UserInputThread implements Runnable {
                 throw new IllegalArgumentException("Invalid command");
         }
         // only add once we are sure that we parsed the request correctly
-        if (opcode == Serializer.Opcodes.RRQ || opcode == Serializer.Opcodes.WRQ) {
+        if (opcode == TftpEncoderDecoder.Opcodes.RRQ || opcode == TftpEncoderDecoder.Opcodes.WRQ) {
             requestQueue.add(new Request(opcode, tokenized[1]));
         } else {
             requestQueue.add(new Request(opcode, null));
@@ -117,8 +117,8 @@ public class UserInputThread implements Runnable {
         return flattenedArray;
     }
 
-    private byte[] encode(Serializer.Opcodes opcode) {
-        return new byte[]{0, (byte) opcode.getValue()};
+    private byte[] encode(TftpEncoderDecoder.Opcodes opcode) {
+        return new byte[]{0, (byte) opcode.value};
     }
 
     private byte[] encode(String str) {

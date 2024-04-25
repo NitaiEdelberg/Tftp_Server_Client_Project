@@ -11,7 +11,6 @@ import static bgu.spl.net.srv.Server.threadPerClient;
 
 public class TftpServer {
     public static ConcurrentHashMap<String, Integer> onlineUsersId = new ConcurrentHashMap<>();
-    public static ConcurrentHashMap<byte[], byte[]> filesHashMap = new ConcurrentHashMap<>();
     public static Connections<Byte> connections = new ConnectionsImpl<>();
 
     public static String directory = "Files";

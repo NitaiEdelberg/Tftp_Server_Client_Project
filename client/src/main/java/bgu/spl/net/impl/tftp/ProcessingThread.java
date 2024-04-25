@@ -33,9 +33,7 @@ public class ProcessingThread implements Runnable {
 
     @Override
     public void run() {
-
         int read;
-
         try {
             while (!protocol.shouldTerminate() && (read = sockReader.read()) >= 0) {
                 byte[] message = encoderDecoder.decodeNextByte((byte) read);

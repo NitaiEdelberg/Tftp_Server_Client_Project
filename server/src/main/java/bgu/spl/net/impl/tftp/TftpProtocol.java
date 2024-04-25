@@ -45,7 +45,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
     }
 
     void sendError(String error, int errorCode) {
-        System.out.println("Error: [" + errorCode + "] " + error);
+        System.err.println("Error: [" + errorCode + "] " + error);
 
         byte[] errorBytes = new byte[OPCODE_LENGTH + 2 + error.getBytes(StandardCharsets.UTF_8).length + NULL_ENDING];
         errorBytes[0] = 0;
@@ -55,7 +55,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
         System.arraycopy(error.getBytes(StandardCharsets.UTF_8), 0, errorBytes, OPCODE_LENGTH + 2,
                 error.getBytes(StandardCharsets.UTF_8).length);
         connections.send(connectionId, errorBytes);
-
     }
 
     @Override
@@ -302,7 +301,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
     private void broadcast(String filename, boolean isDeleted) {
         byte[] packet = new byte[filename.getBytes().length + 4];
         packet[0] = 0;
-        packet[1] = 9;
+        packet[1] = (byte) TftpEncoderDecoder.Opcodes.BCAST.value;
         if (isDeleted) packet[2] = 0;
         else packet[2] = 1;
         System.arraycopy(filename.getBytes(), 0, packet, 3, filename.getBytes().length);

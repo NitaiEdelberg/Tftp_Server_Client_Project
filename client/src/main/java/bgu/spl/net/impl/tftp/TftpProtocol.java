@@ -30,7 +30,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
     private AtomicBoolean isConnected;
     private LinkedList<byte[]> packets;
     private short blockNum;
-    private File currentFile;
 
     public TftpProtocol(BlockingQueue<Request> requestQueue, BlockingQueue<byte[]> writeQueue, AtomicBoolean isConnected) {
         this.requestQueue = requestQueue;
@@ -39,7 +38,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
 
         this.packets = new LinkedList<>();
         this.blockNum = 0;
-        this.currentFile = null;
     }
 
     @Override
@@ -113,6 +111,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
             return;
         }
 
+        // only in case of WRQ
         if (blockNum == 0) {
             Path path = Paths.get(request.filename);
 
@@ -179,7 +178,6 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
                     }
                     endRequest();
                 }
-
                 break;
         }
     }
@@ -187,6 +185,7 @@ public class TftpProtocol implements BidiMessagingProtocol<byte[]> {
     private void endRequest() {
         requestQueue.remove();
         blockNum = 0;
+        packets.clear();
     }
 
     private void sendACK(short blockNumber) {
