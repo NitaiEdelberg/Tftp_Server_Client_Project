@@ -14,7 +14,7 @@ public class TftpServer {
     public static Connections<Byte> connections = new ConnectionsImpl<>();
 
     public static String directory = "Files";
-    public static String temp_directory = "temp_files";
+    public static String temp_directory = "src/temp_files";
     public static void main(String[] args) {
         if(args.length == 1) { //opcode short
             threadPerClient(
