@@ -28,4 +28,6 @@ These procedures are crucial for the server-client communication but are not tri
 
 
 ## Copyright Notice
-© 2024 by Nitai Edelberg and Ido Toker. All rights reserved. This project is a part of academic work at Ben Gurion University. Unauthorized use, copying, or distribution is prohibited.
+© 2024 by Nitai Edelberg and Ido Toker. All rights reserved.
+
+This project is a part of academic work at Ben Gurion University. Unauthorized use, copying, or distribution is prohibited.
