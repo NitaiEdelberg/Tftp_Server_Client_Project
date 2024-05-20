@@ -8,10 +8,10 @@ The Server_Project implements an extended version of the Trivial File Transfer P
 ### Server
 The server component is built on a Thread-Per-Client (TPC) model, allowing efficient handling of multiple client communications concurrently. It integrates interfaces for managing connections and broadcasting messages, enabling interactions such as file uploads, downloads, and notifications of file status changes (additions or deletions).
 
-###Client
+### Client
 Each client operates through two main threads: a keyboard thread for sending commands and a listening thread for handling server responses. The client supports various commands for interacting with the server, including logging in, file manipulation, and querying server directories.
 
-###Commands
+### Commands
 - **LOGRQ**: Logs a user into the server using a specified username.
 - **DELRQ**: Requests deletion of a specified file from the server.
 - **RRQ**: Downloads a file from the server to the client's working directory.
@@ -19,7 +19,7 @@ Each client operates through two main threads: a keyboard thread for sending com
 - **DIRQ**: Retrieves a list of all files currently stored on the server.
 - **DISC**: Disconnects the client from the server and closes the application.
 
-###Internal Procedures
+### Internal Procedures
 These procedures are crucial for the server-client communication but are not triggered directly through client commands:
 - **DATA**: Transmits a block of the file between the server and the client.
 - **ACK**: Acknowledges the receipt of packets.
@@ -27,5 +27,5 @@ These procedures are crucial for the server-client communication but are not tri
 - **ERROR**: Communicates error messages related to file transfers and command executions.
 
 
-##Copyright Notice
+## Copyright Notice
 © 2024 by Nitai Edelberg and Ido Toker. All rights reserved. This project is a part of academic work at Ben Gurion University. Unauthorized use, copying, or distribution is prohibited.
