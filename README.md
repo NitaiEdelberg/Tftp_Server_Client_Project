@@ -1,10 +1,11 @@
-#Server_Project
+# Server_Project
 
-##Overview
+## Overview
 The Server_Project implements an extended version of the Trivial File Transfer Protocol (TFTP), facilitating multi-client interactions including file uploads, downloads, and system-wide file status notifications. This Java-based application supports multiple simultaneous client connections and incorporates advanced functionalities like file transfer, multi-casting, and command execution using a binary communication protocol.
 
-##Key Components
-###Server
+## Key Components
+
+### Server
 The server component is built on a Thread-Per-Client (TPC) model, allowing efficient handling of multiple client communications concurrently. It integrates interfaces for managing connections and broadcasting messages, enabling interactions such as file uploads, downloads, and notifications of file status changes (additions or deletions).
 
 ###Client
@@ -24,6 +25,7 @@ These procedures are crucial for the server-client communication but are not tri
 - **ACK**: Acknowledges the receipt of packets.
 - **BCAST**: Broadcasts the addition or deletion of files to all connected clients.
 - **ERROR**: Communicates error messages related to file transfers and command executions.
+
 
 ##Copyright Notice
 © 2024 by Nitai Edelberg and Ido Toker. All rights reserved. This project is a part of academic work at Ben Gurion University. Unauthorized use, copying, or distribution is prohibited.
