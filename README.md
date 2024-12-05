@@ -3,19 +3,34 @@
 ## Overview
 The Server_Project implements an extended version of the Trivial File Transfer Protocol (TFTP), facilitating multi-client interactions including file uploads, downloads, and system-wide file status notifications. This Java-based application supports multiple simultaneous client connections and incorporates advanced functionalities like file transfer, multi-casting, and command execution using a binary communication protocol.
 
-## How to run
-First, make sure that you have maven installed.
-To start the server:
-In the terminal run: mvn clean compile
-Then add arguments 7777 : representing the port of the communication.
-Then run the main function in the TftpServer class.
+## Prerequisites
 
-To start the client:
-In the terminal run: mvn clean compile
-Then add arguments: 127.0.0.0 7777 : representing ip and port
-Then run the main function in the TftpClient class.
+Before starting, ensure the following:
+- [Maven](https://maven.apache.org/) is installed on your system.
 
-Now you have both the Server and the Client running and you can start sending requests.
+---
+
+## Starting the Server
+
+To start the server:  
+
+1. Open a terminal.  
+2. Run the following command to compile the project:  
+   ```bash
+   mvn clean compile
+3. Add the argument 7777 in the configuration (port).
+4. Execute the main function in the TftpServer class.
+
+## Starting the Client
+
+To start the Client:  
+
+1. Open a terminal.  
+2. Run the following command to compile the project:  
+   ```bash
+   mvn clean compile
+3. Add the argument 127.0.0.1 7777 in the configuration (ip and port).
+4. Execute the main function in the TftpClient class.
 
 ## Key Components
 
