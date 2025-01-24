@@ -7,6 +7,7 @@ The Server_Project implements an extended version of the Trivial File Transfer P
 
 Before starting, ensure the following:
 - [Maven](https://maven.apache.org/) is installed on your system.
+- download server and client separately! open each one of them as a differnt project.
 
 ---
 
